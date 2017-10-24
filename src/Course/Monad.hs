@@ -63,9 +63,19 @@ infixr 1 =<<
   f (a -> b)
   -> f a
   -> f b
-(<**>) =
-  error "todo: Course.Monad#(<**>)"
+(<**>) fab fa =
+  fab >>= \ab ->
+  fa >>= \a ->
+  pure (ab a)
+  -- (\ab -> (\a -> pure (ab a)) =<< fa ) =<< fab  -- f b
 
+-- ab :: a -> b
+-- a :: a
+----
+-- ? :: f b
+
+-- (=<<) :: (a -> fb) -> f a -> f b
+-- (=<<) :: ((a -> b) -> f y) -> f (a -> b) -> f y
 infixl 4 <**>
 
 -- | Binds a function on the ExactlyOne monad.
@@ -90,7 +100,7 @@ instance Monad List where
     -> List a
     -> List b
   (=<<) =
-    error "todo: Course.Monad (=<<)#instance List"
+    flatMap
 
 -- | Binds a function on an Optional.
 --
@@ -102,19 +112,27 @@ instance Monad Optional where
     -> Optional a
     -> Optional b
   (=<<) =
-    error "todo: Course.Monad (=<<)#instance Optional"
+    bindOptional
+
+
 
 -- | Binds a function on the reader ((->) t).
 --
 -- >>> ((*) =<< (+10)) 7
 -- 119
 instance Monad ((->) t) where
-  (=<<) ::
+  (=<<) :: -- (a -> (t -> b)) -> (t -> a) -> (t -> b)
     (a -> ((->) t b))
+--  (a -> t -> b)
     -> ((->) t a)
+  --(t -> a)
     -> ((->) t b)
-  (=<<) =
-    error "todo: Course.Monad (=<<)#instance ((->) t)"
+  --(t -> b)
+  -- t -> b
+  (=<<) atb ta t =
+    atb (ta t) t
+
+-- (a -> f b) -> f a -> f b
 
 -- | Flattens a combined structure to a single structure.
 --
@@ -134,7 +152,10 @@ join ::
   f (f a)
   -> f a
 join =
-  error "todo: Course.Monad#join"
+  (=<<) id
+
+-- (=<<) :: (x   -> f y) -> f x     -> f y
+-- (=<<) :: (f y -> f y) -> f (f y) -> f y
 
 -- | Implement a flipped version of @(=<<)@, however, use only
 -- @join@ and @(<$>)@.
@@ -148,7 +169,7 @@ join =
   -> (a -> f b)
   -> f b
 (>>=) =
-  error "todo: Course.Monad#(>>=)"
+  flip (=<<) 
 
 infixl 1 >>=
 
@@ -163,8 +184,15 @@ infixl 1 >>=
   -> (a -> f b)
   -> a
   -> f c
-(<=<) =
-  error "todo: Course.Monad#(<=<)"
+(<=<) bfc afb a=
+  bfc =<< (afb a)
+  
+-- b -> f c
+-- a -> f b
+-- a
+-- f c
+  
+-- (=<<) :: (x -> fy) -> f x -> f y
 
 infixr 1 <=<
 
